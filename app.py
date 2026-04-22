@@ -1,15 +1,8 @@
-from flask import Flask, request, jsonify
+import streamlit as st
 import requests
 import hashlib
 
-app = Flask(__name__)
-
-# Fixed: Added a body to the home function
-@app.route('/')
-def home():
-    return jsonify({"message": "API is running"}), 200
-
-# Fixed: Moved these variables outside the function so they act as proper globals
+# --- Global Variables & Helpers ---
 HEADERS = {
     "User-Agent": "GarenaMSDK/4.0.30",
     "Content-Type": "application/x-www-form-urlencoded",
@@ -24,16 +17,56 @@ def call_post(url, data):
     try:
         resp = requests.post(url, headers=HEADERS, data=data)
         return resp.json()
-    except:
-        return {"error": "Request failed"}
+    except Exception as e:
+        return {"error": f"Request failed: {e}"}
 
-# ------------------------- Bind Info -------------------------
-@app.route("/info", methods=["GET"])
-def bind_info():
-    access_token = request.args.get("access_token")
-    if not access_token:
-        return jsonify({"error":"access_token required"}),400
-    url = f"https://bind-info-nu.vercel.app/bind_info?access_token={access_token}"
+# --- Streamlit UI ---
+st.title("Account Management Web App")
+
+# Create tabs for different functionalities
+tab1, tab2 = st.tabs(["Bind Info", "Send OTP"])
+
+with tab1:
+    st.header("Get Bind Info")
+    info_token = st.text_input("Access Token", key="info_token")
+    
+    if st.button("Fetch Info"):
+        if not info_token:
+            st.error("Access token is required")
+        else:
+            url = f"https://bind-info-nu.vercel.app/bind_info?access_token={info_token}"
+            try:
+                resp = requests.get(url)
+                st.json(resp.json())
+            except:
+                st.error("Failed to fetch bind info")
+
+with tab2:
+    st.header("Send OTP")
+    otp_token = st.text_input("Access Token", key="otp_token")
+    email = st.text_input("Email Address")
+    
+    if st.button("Send OTP"):
+        if not otp_token or not email:
+            st.error("Access token and email are required")
+        else:
+            url_send = "https://100067.connect.garena.com/game/account_security/bind:send_otp"
+            payload = {
+                "email": email, 
+                "app_id": APP_ID, 
+                "access_token": otp_token, 
+                "locale": LOCALE, 
+                "region": REGION
+            }
+            res = call_post(url_send, payload)
+            
+            # Display the result nicely
+            if res.get("error"):
+                st.error("Failed to send OTP")
+            else:
+                st.success("Request processed!")
+            
+            st.json(res)
     try:
         resp = requests.get(url)
         return resp.json()
