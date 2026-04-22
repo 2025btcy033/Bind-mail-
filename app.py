@@ -3,8 +3,8 @@ import requests
 import hashlib
 
 app = Flask(__name__)
-@app.route('/')
-def home():
+
+# ------------------------- Global Variables -------------------------
 HEADERS = {
     "User-Agent": "GarenaMSDK/4.0.30",
     "Content-Type": "application/x-www-form-urlencoded",
@@ -15,12 +15,18 @@ APP_ID = "100067"
 REGION = "PK"
 LOCALE = "en_PK"
 
+# ------------------------- Helper Function -------------------------
 def call_post(url, data):
     try:
         resp = requests.post(url, headers=HEADERS, data=data)
         return resp.json()
-    except:
-        return {"error": "Request failed"}
+    except Exception as e:
+        return {"error": "Request failed", "details": str(e)}
+
+# ------------------------- Home Route -------------------------
+@app.route('/')
+def home():
+    return jsonify({"status": "API is running successfully!"})
 
 # ------------------------- Bind Info -------------------------
 @app.route("/info", methods=["GET"])
